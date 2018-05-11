@@ -607,6 +607,10 @@ public class ArithmeticTests extends AbstractTest {
   public void testAssignPlus2() {
     assertEquals(10, test("xx0 = 5; xx0 =+ 4; xx0 + 1"));
   }
+  
+  public void testAssignBigDecimalZEROPlus() {
+    assertEquals(new BigDecimal("5"), test("xx0 = 0B; xx0 =+ 4; xx0 + 1"));
+  }
 
   public void testAssignDiv() {
     assertEquals(2.0, test("xx0 = 20; xx0 /= 10; xx0"));

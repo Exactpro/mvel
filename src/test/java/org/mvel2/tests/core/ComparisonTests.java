@@ -296,6 +296,14 @@ public class ComparisonTests extends AbstractTest {
     assertEquals(false, MVEL.eval("0<-1"));
   }
 
+  public void testBigDecimalZERO() {
+      Map map = new HashMap();
+      map.put("x", new BigDecimal("8"));
+      map.put("a", BigDecimal.ZERO);
+
+      assertEquals(true, MVEL.eval("x == a + 8", map));
+  }
+
   public void testStringCoercionForComparison() {
     assertEquals(false, MVEL.eval("36 > 242"));
     assertEquals(false, MVEL.eval("\"36\" > 242"));

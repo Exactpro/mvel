@@ -21,7 +21,6 @@ import org.mvel2.DataTypes;
 import org.mvel2.Unit;
 import org.mvel2.compiler.BlankLiteral;
 import org.mvel2.debug.DebugTools;
-import org.mvel2.util.InternalNumber;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -568,7 +567,7 @@ public strictfp class MathProcessor {
           case MULT:
             return ((Float) val1) * ((Float) val2);
           case POWER:
-            return narrowType(new InternalNumber((Float) val1, MATH_CONTEXT).pow(new InternalNumber((Float) val2).intValue(), MATH_CONTEXT), -1);
+            return narrowType(new BigDecimal((Float) val1, MATH_CONTEXT).pow(new BigDecimal((Float) val2).intValue(), MATH_CONTEXT), -1);
           case MOD:
             return ((Float) val1) % ((Float) val2);
           case GTHAN:
@@ -705,42 +704,42 @@ public strictfp class MathProcessor {
   }
 
 
-  private static InternalNumber getInternalNumberFromType(Object in, int type) {
+  private static BigDecimal getInternalNumberFromType(Object in, int type) {
     if (in == null || in == BlankLiteral.INSTANCE)
-      return new InternalNumber(0, MATH_CONTEXT);
+      return new BigDecimal(0, MATH_CONTEXT);
     switch (type) {
       case BIG_DECIMAL:
-        return new InternalNumber(((BigDecimal) in).doubleValue());
+        return (BigDecimal) in;
       case DataTypes.BIG_INTEGER:
-        return new InternalNumber((BigInteger) in, MathContext.DECIMAL128);
+        return new BigDecimal((BigInteger) in, MathContext.DECIMAL128);
       case DataTypes.INTEGER:
       case DataTypes.W_INTEGER:
-        return new InternalNumber((Integer) in, MathContext.DECIMAL32);
+        return new BigDecimal((Integer) in, MathContext.DECIMAL32);
       case DataTypes.LONG:
       case DataTypes.W_LONG:
-        return new InternalNumber((Long) in, MathContext.DECIMAL64);
+        return new BigDecimal((Long) in, MathContext.DECIMAL64);
       case DataTypes.STRING:
-        return new InternalNumber((String) in, MathContext.DECIMAL64);
+        return new BigDecimal((String) in, MathContext.DECIMAL64);
       case DataTypes.FLOAT:
       case DataTypes.W_FLOAT:
-        return new InternalNumber((Float) in, MathContext.DECIMAL64);
+        return new BigDecimal((Float) in, MathContext.DECIMAL64);
       case DataTypes.DOUBLE:
       case DataTypes.W_DOUBLE:
-        return new InternalNumber((Double) in, MathContext.DECIMAL64);
+        return new BigDecimal((Double) in, MathContext.DECIMAL64);
       case DataTypes.SHORT:
       case DataTypes.W_SHORT:
-        return new InternalNumber((Short) in, MathContext.DECIMAL32);
+        return new BigDecimal((Short) in, MathContext.DECIMAL32);
       case DataTypes.CHAR:
       case DataTypes.W_CHAR:
-        return new InternalNumber((Character) in, MathContext.DECIMAL32);
+        return new BigDecimal((Character) in, MathContext.DECIMAL32);
       case DataTypes.BOOLEAN:
       case DataTypes.W_BOOLEAN:
-        return new InternalNumber(((Boolean) in) ? 1 : 0);
+        return new BigDecimal(((Boolean) in) ? 1 : 0);
       case DataTypes.UNIT:
-        return new InternalNumber(((Unit) in).getValue(), MathContext.DECIMAL64);
+        return new BigDecimal(((Unit) in).getValue(), MathContext.DECIMAL64);
       case DataTypes.W_BYTE:
       case DataTypes.BYTE:
-        return new InternalNumber(((Byte) in).intValue());
+        return new BigDecimal(((Byte) in).intValue());
 
 
     }
