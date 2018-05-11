@@ -304,6 +304,10 @@ public class ComparisonTests extends AbstractTest {
       assertEquals(true, MVEL.eval("x == a + 8", map));
   }
 
+  public void testBigDecimalString() {
+    assertEquals(false, test("new java.math.BigDecimal('201708100000000076') == '201708100000000074'"));
+  }
+  
   public void testStringCoercionForComparison() {
     assertEquals(false, MVEL.eval("36 > 242"));
     assertEquals(false, MVEL.eval("\"36\" > 242"));

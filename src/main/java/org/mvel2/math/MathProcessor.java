@@ -210,9 +210,16 @@ public strictfp class MathProcessor {
         return doOperationsSameType(type1, val1, operation, val2);
       }
       else if (isNumericOperation(type1, val1, operation, type2, val2)) {
-        return doPrimWrapperArithmetic(getNumber(val1, type1),
-            operation,
-            getNumber(val2, type2), true, box(type2) > box(type1) ? box(type2) : box(type1));
+        int returnTarget = box(type2) > box(type1) ? box(type2) : box(type1);
+        if (type1 == DataTypes.BIG_DECIMAL || type2 == DataTypes.BIG_DECIMAL) {
+          return doBigDecimalArithmetic(getInternalNumberFromType(val1, type1), 
+              operation, 
+              getInternalNumberFromType(val2, type2), false, returnTarget);
+        } else {
+          return doPrimWrapperArithmetic(getNumber(val1, type1),
+              operation,
+              getNumber(val2, type2), true, returnTarget);
+        }
       }
       else if (operation != ADD &&
           (type1 == DataTypes.W_BOOLEAN || type2 == DataTypes.W_BOOLEAN) &&
