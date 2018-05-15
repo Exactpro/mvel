@@ -46,6 +46,7 @@ import static java.lang.System.getProperty;
 import static org.mvel2.MVEL.compileExpression;
 import static org.mvel2.MVEL.executeExpression;
 import static org.mvel2.debug.DebugTools.decompile;
+import static org.mvel2.optimizers.OptimizerFactory.DYNAMIC;
 import static org.mvel2.optimizers.OptimizerFactory.setDefaultOptimizer;
 
 public abstract class AbstractTest extends TestCase {
@@ -63,7 +64,7 @@ public abstract class AbstractTest extends TestCase {
   }
 
   protected void setUp() throws Exception {
-
+    setDefaultOptimizer(DYNAMIC);
   }
 
   protected static Map createTestMap() {
