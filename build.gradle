@@ -1,4 +1,5 @@
 apply plugin: 'com.jfrog.artifactory'
+apply plugin: 'jacoco'
 apply plugin: 'java'
 apply plugin: 'maven'
 
@@ -98,6 +99,21 @@ artifacts {
     archives sourcesJar
 }
 
+artifactory {
+    publish {
+        defaults {
+            // Reference to Gradle configurations defined in the build script.
+            // This is how we tell the Artifactory Plugin which artifacts should be
+            // published to Artifactory.
+            publishConfigs('archives')
+        }
+    }
+}
+
 artifactoryPublish {
     dependsOn testsJar, sourcesJar
+
+    // Setting this property to true will make the artifactoryPublish task
+    // skip this module (in our case, the root module):
+    skip = true
 }
