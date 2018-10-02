@@ -17,10 +17,36 @@
  */
 package org.mvel2.math;
 
-import org.mvel2.DataTypes;
-import org.mvel2.Unit;
-import org.mvel2.compiler.BlankLiteral;
-import org.mvel2.debug.DebugTools;
+import static java.lang.String.valueOf;
+import static org.mvel2.DataConversion.convert;
+import static org.mvel2.DataTypes.BIG_DECIMAL;
+import static org.mvel2.DataTypes.EMPTY;
+import static org.mvel2.Operator.ADD;
+import static org.mvel2.Operator.BW_AND;
+import static org.mvel2.Operator.BW_NOT;
+import static org.mvel2.Operator.BW_OR;
+import static org.mvel2.Operator.BW_SHIFT_LEFT;
+import static org.mvel2.Operator.BW_SHIFT_RIGHT;
+import static org.mvel2.Operator.BW_USHIFT_LEFT;
+import static org.mvel2.Operator.BW_USHIFT_RIGHT;
+import static org.mvel2.Operator.BW_XOR;
+import static org.mvel2.Operator.DIV;
+import static org.mvel2.Operator.EQUAL;
+import static org.mvel2.Operator.GETHAN;
+import static org.mvel2.Operator.GTHAN;
+import static org.mvel2.Operator.LETHAN;
+import static org.mvel2.Operator.LTHAN;
+import static org.mvel2.Operator.MOD;
+import static org.mvel2.Operator.MULT;
+import static org.mvel2.Operator.NEQUAL;
+import static org.mvel2.Operator.POWER;
+import static org.mvel2.Operator.SOUNDEX;
+import static org.mvel2.Operator.STR_APPEND;
+import static org.mvel2.Operator.SUB;
+import static org.mvel2.util.ParseTools.__resolveType;
+import static org.mvel2.util.ParseTools.isNumber;
+import static org.mvel2.util.ParseTools.narrowType;
+import static org.mvel2.util.Soundex.soundex;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -29,19 +55,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static java.lang.String.valueOf;
-import static org.mvel2.DataConversion.convert;
-import static org.mvel2.DataTypes.BIG_DECIMAL;
-import static org.mvel2.DataTypes.EMPTY;
-import static org.mvel2.Operator.*;
-import static org.mvel2.util.ParseTools.*;
-import static org.mvel2.util.Soundex.soundex;
+import org.mvel2.DataTypes;
+import org.mvel2.Unit;
+import org.mvel2.compiler.BlankLiteral;
+import org.mvel2.debug.DebugTools;
 
 /**
  * @author Christopher Brock
  */
 public strictfp class MathProcessor {
-  private static final MathContext MATH_CONTEXT = MathContext.DECIMAL128;
+  public static volatile MathContext MATH_CONTEXT = MathContext.DECIMAL128;
+  public static volatile boolean COMPARE_WITH_PRECISION = false;
+  public static volatile BigDecimal COMPARISON_PRECISION = BigDecimal.ONE.divide(BigDecimal.TEN.pow(BigDecimal.TEN.intValue()));
 
   public static Object doOperations(Object val1, int operation, Object val2) {
     return doOperations(val1 == null ? DataTypes.OBJECT : __resolveType(val1.getClass()),
@@ -95,17 +120,17 @@ public strictfp class MathProcessor {
       case MOD:
         return toType(val1.doubleValue() % val2.doubleValue(), returnTarget);
       case GTHAN:
-        return val1.doubleValue() > val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) == 1 ? Boolean.TRUE : Boolean.FALSE;
       case GETHAN:
-        return val1.doubleValue() >= val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) >= 0 ? Boolean.TRUE : Boolean.FALSE;
       case LTHAN:
-        return val1.doubleValue() < val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) == -1 ? Boolean.TRUE : Boolean.FALSE;
       case LETHAN:
-        return val1.doubleValue() <= val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) <= 0 ? Boolean.TRUE : Boolean.FALSE;
       case EQUAL:
-        return val1.doubleValue() == val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) == 0 ? Boolean.TRUE : Boolean.FALSE;
       case NEQUAL:
-        return val1.doubleValue() != val2.doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1.doubleValue(), val2.doubleValue()) != 0 ? Boolean.TRUE : Boolean.FALSE;
     }
     return null;
 
@@ -181,26 +206,68 @@ public strictfp class MathProcessor {
 
       case MOD:
         if (iNumber) {
-          return narrowType(val1.remainder(val2), returnTarget);
+          return narrowType(val1.remainder(val2, MATH_CONTEXT), returnTarget);
         }
         else {
-          return val1.remainder(val2);
+          return val1.remainder(val2, MATH_CONTEXT);
         }
 
       case GTHAN:
-        return val1.compareTo(val2) == 1 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) == 1 ? Boolean.TRUE : Boolean.FALSE;
       case GETHAN:
-        return val1.compareTo(val2) >= 0 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) >= 0 ? Boolean.TRUE : Boolean.FALSE;
       case LTHAN:
-        return val1.compareTo(val2) == -1 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) == -1 ? Boolean.TRUE : Boolean.FALSE;
       case LETHAN:
-        return val1.compareTo(val2) <= 0 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) <= 0 ? Boolean.TRUE : Boolean.FALSE;
       case EQUAL:
-        return val1.compareTo(val2) == 0 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) == 0 ? Boolean.TRUE : Boolean.FALSE;
       case NEQUAL:
-        return val1.compareTo(val2) != 0 ? Boolean.TRUE : Boolean.FALSE;
+        return compare(val1, val2) != 0 ? Boolean.TRUE : Boolean.FALSE;
     }
     return null;
+  }
+
+    private static int compare(float left, float right) {
+        if(!COMPARE_WITH_PRECISION) {
+            return Float.compare(left, right);
+        }
+
+        float diff = left - right;
+
+        if(Math.abs(diff) <= COMPARISON_PRECISION.floatValue()) {
+            return 0;
+        }
+
+        return diff > 0 ? 1 : -1;
+    }
+
+    private static int compare(double left, double right) {
+        if(!COMPARE_WITH_PRECISION) {
+            return Double.compare(left, right);
+        }
+
+        double diff = left - right;
+
+        if(Math.abs(diff) <= COMPARISON_PRECISION.doubleValue()) {
+            return 0;
+        }
+
+        return diff > 0 ? 1 : -1;
+    }
+
+    private static int compare(BigDecimal left, BigDecimal right) {
+        if(!COMPARE_WITH_PRECISION) {
+            return left.compareTo(right);
+        }
+
+        BigDecimal diff = left.subtract(right);
+
+        if(diff.abs().compareTo(COMPARISON_PRECISION) <= 0) {
+            return 0;
+        }
+
+        return diff.signum();
   }
 
   private static Object _doOperations(int type1, Object val1, int operation, int type2, Object val2) {
@@ -212,8 +279,8 @@ public strictfp class MathProcessor {
       else if (isNumericOperation(type1, val1, operation, type2, val2)) {
         int returnTarget = box(type2) > box(type1) ? box(type2) : box(type1);
         if (type1 == DataTypes.BIG_DECIMAL || type2 == DataTypes.BIG_DECIMAL) {
-          return doBigDecimalArithmetic(getInternalNumberFromType(val1, type1), 
-              operation, 
+          return doBigDecimalArithmetic(getInternalNumberFromType(val1, type1),
+              operation,
               getInternalNumberFromType(val2, type2), false, returnTarget);
         } else {
           return doPrimWrapperArithmetic(getNumber(val1, type1),
@@ -542,17 +609,17 @@ public strictfp class MathProcessor {
           case MOD:
             return ((Double) val1) % ((Double) val2);
           case GTHAN:
-            return ((Double) val1) > ((Double) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) == 1 ? Boolean.TRUE : Boolean.FALSE;
           case GETHAN:
-            return ((Double) val1) >= ((Double) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) >= 0 ? Boolean.TRUE : Boolean.FALSE;
           case LTHAN:
-            return ((Double) val1) < ((Double) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) == -1 ? Boolean.TRUE : Boolean.FALSE;
           case LETHAN:
-            return ((Double) val1) <= ((Double) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) <= 0 ? Boolean.TRUE : Boolean.FALSE;
           case EQUAL:
-            return ((Double) val1).doubleValue() == ((Double) val2).doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) == 0 ? Boolean.TRUE : Boolean.FALSE;
           case NEQUAL:
-            return ((Double) val1).doubleValue() != ((Double) val2).doubleValue() ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Double)val1, (Double)val2) != 0 ? Boolean.TRUE : Boolean.FALSE;
           case BW_AND:
           case BW_OR:
           case BW_SHIFT_LEFT:
@@ -578,17 +645,17 @@ public strictfp class MathProcessor {
           case MOD:
             return ((Float) val1) % ((Float) val2);
           case GTHAN:
-            return ((Float) val1) > ((Float) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) == 1 ? Boolean.TRUE : Boolean.FALSE;
           case GETHAN:
-            return ((Float) val1) >= ((Float) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) >= 0 ? Boolean.TRUE : Boolean.FALSE;
           case LTHAN:
-            return ((Float) val1) < ((Float) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) == -1 ? Boolean.TRUE : Boolean.FALSE;
           case LETHAN:
-            return ((Float) val1) <= ((Float) val2) ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) <= 0 ? Boolean.TRUE : Boolean.FALSE;
           case EQUAL:
-            return ((Float) val1).floatValue() == ((Float) val2).floatValue() ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) == 0 ? Boolean.TRUE : Boolean.FALSE;
           case NEQUAL:
-            return ((Float) val1).floatValue() != ((Float) val2).floatValue() ? Boolean.TRUE : Boolean.FALSE;
+            return compare((Float)val1, (Float)val2) != 0 ? Boolean.TRUE : Boolean.FALSE;
           case BW_AND:
           case BW_OR:
           case BW_SHIFT_LEFT:

@@ -1,13 +1,7 @@
 package org.mvel2.tests.core;
 
-import org.mvel2.MVEL;
-import org.mvel2.ParserConfiguration;
-import org.mvel2.ParserContext;
-import org.mvel2.compiler.CompiledExpression;
-import org.mvel2.compiler.ExecutableStatement;
-import org.mvel2.compiler.ExpressionCompiler;
-import org.mvel2.optimizers.OptimizerFactory;
-import org.mvel2.util.Make;
+import static org.mvel2.MVEL.compileExpression;
+import static org.mvel2.MVEL.executeExpression;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -15,8 +9,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.mvel2.MVEL.compileExpression;
-import static org.mvel2.MVEL.executeExpression;
+import org.mvel2.MVEL;
+import org.mvel2.ParserConfiguration;
+import org.mvel2.ParserContext;
+import org.mvel2.compiler.CompiledExpression;
+import org.mvel2.compiler.ExecutableStatement;
+import org.mvel2.compiler.ExpressionCompiler;
+import org.mvel2.math.MathProcessor;
+import org.mvel2.optimizers.OptimizerFactory;
+import org.mvel2.util.Make;
 
 public class ArithmeticTests extends AbstractTest {
   public void testMath() {
@@ -607,7 +608,7 @@ public class ArithmeticTests extends AbstractTest {
   public void testAssignPlus2() {
     assertEquals(10, test("xx0 = 5; xx0 =+ 4; xx0 + 1"));
   }
-  
+
   public void testAssignBigDecimalZEROPlus() {
     assertEquals(new BigDecimal("5"), test("xx0 = 0B; xx0 =+ 4; xx0 + 1"));
   }
@@ -1014,8 +1015,8 @@ public class ArithmeticTests extends AbstractTest {
     Boolean result = (Boolean) MVEL.executeExpression(stmt, vars);
     assertTrue(result);
   }
-  
-  public void testStaticMathCeil() {      
+
+  public void testStaticMathCeil() {
     int x = 4;
     int m = (int) java.lang.Math.ceil( x/3 ); // demonstrating it's perfectly valid java
 
@@ -1031,9 +1032,9 @@ public class ArithmeticTests extends AbstractTest {
     Map vars = new HashMap();
     vars.put("x", 4);
     assertEquals(new Integer( 2 ), MVEL.executeExpression(stmt, vars));
-  }  
+  }
 
-  public void testStaticMathCeilWithJavaClassStyleLiterals() {            
+  public void testStaticMathCeilWithJavaClassStyleLiterals() {
     MVEL.COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS = true;
     try {
       String str = "java.lang.Math.ceil( x/3 )";
@@ -1052,7 +1053,7 @@ public class ArithmeticTests extends AbstractTest {
       MVEL.COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS = false;
     }
   }
-  
+
   public void testMathCeilWithDoubleCast() {
     String str = "Math.ceil( (double) x / 3 )";
 
@@ -1068,4 +1069,36 @@ public class ArithmeticTests extends AbstractTest {
     vars.put("x", 4);
     assertEquals(Math.ceil((double) 4 / 3), MVEL.executeExpression(stmt, vars));
   }
+
+    public void testBigDecimalComparisonWithPrecision() {
+        MathProcessor.COMPARE_WITH_PRECISION = true;
+        Serializable expression = MVEL.compileExpression("(200B / (200B + 1000B) * 300B) == 50B");
+        assertTrue((Boolean)MVEL.executeExpression(expression));
+
+        MathProcessor.COMPARE_WITH_PRECISION = false;
+        expression = MVEL.compileExpression("(200B / (200B + 1000B) * 300B) == 50B");
+        assertFalse((Boolean)MVEL.executeExpression(expression));
+    }
+
+    public void testDoubleComparisonWithPrecision() {
+        MathProcessor.COMPARE_WITH_PRECISION = true;
+        Serializable expression = MVEL.compileExpression("50.00000000001d == 50d");
+        assertTrue((Boolean)MVEL.executeExpression(expression));
+
+        MathProcessor.COMPARE_WITH_PRECISION = false;
+        expression = MVEL.compileExpression("50.00000000001d == 50d");
+        assertFalse((Boolean)MVEL.executeExpression(expression));
+    }
+
+    public void testFloatComparisonWithPrecision() {
+        MathProcessor.COMPARISON_PRECISION = BigDecimal.ONE.divide(BigDecimal.TEN.pow(4));
+
+        MathProcessor.COMPARE_WITH_PRECISION = true;
+        Serializable expression = MVEL.compileExpression("50.00001f == 50f");
+        assertTrue((Boolean)MVEL.executeExpression(expression));
+
+        MathProcessor.COMPARE_WITH_PRECISION = false;
+        expression = MVEL.compileExpression("50.00001f == 50f");
+        assertFalse((Boolean)MVEL.executeExpression(expression));
+    }
 }
