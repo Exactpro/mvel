@@ -11,7 +11,7 @@ ext {
     publishVersion  =  build_mode == 'snapshot' ? "${artifactVersion}-SNAPSHOT" : artifactVersion
 }
 
-group = 'com.exactprosystems'
+group = 'com.exactpro.mvel'
 version = publishVersion
 
 description = 'mvel'
