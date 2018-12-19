@@ -6,9 +6,8 @@ apply plugin: 'maven'
 ext {
     sharedDir       = file('shared')
     originVersion   = '2.3.2.Final'
-    exactproVersion = '0.1'
-    artifactVersion = "${originVersion}.${exactproVersion}"
-    publishVersion  =  build_mode == 'snapshot' ? "${artifactVersion}-SNAPSHOT" : artifactVersion
+    exactproVersion = '1'
+    publishVersion  = "${originVersion}.${exactproVersion}"
 }
 
 group = 'com.exactpro.mvel'
@@ -21,14 +20,7 @@ targetCompatibility = 1.6
 
 buildscript {
     repositories {
-        maven {
-            name 'MavenLocal' // for local builds only
-            url 'shared'
-        }
-        maven { // for gradle fast plugin
-            name 'Artifactory-release'
-            url 'http://artifactory5.exp.exactpro.com/artifactory/libs-release'
-        }
+        jcenter()
     }
     dependencies {
         classpath(group: 'org.jfrog.buildinfo', name: 'build-info-extractor-gradle', version: '4.4.12')
@@ -40,10 +32,7 @@ repositories {
         name 'MavenLocal' // for local builds only
         url 'shared'
     }
-    maven { // for gradle fast plugin
-        name 'Artifactory-release'
-        url 'http://artifactory5.exp.exactpro.com/artifactory/libs-release'
-    }
+    jcenter()
 }
 
 dependencies {
