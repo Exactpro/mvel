@@ -2,6 +2,7 @@ apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'jacoco'
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'signing'
 
 ext {
     sharedDir       = file('shared')
@@ -52,20 +53,60 @@ jar {
     }
 }
 
+javadoc {
+    options.addStringOption('Xdoclint:none', '-quiet')
+}
+
 uploadArchives {
-    repositories.mavenDeployer {
-        uniqueVersion = false // publish non unique snapshots to local repository
-        repository(url: "file://${sharedDir}")
-        doLast {
-        // Remove any invalid maven-metadata.xml files that may have been created
-        // for SNAPSHOT versions that are *not* uniquely versioned.
-            pom*.each { pom ->
-                if (pom.version.endsWith('-SNAPSHOT')) {
-                    final File artifactDir = new File(rootProject.ext.sharedDir,
-                            pom.groupId.replace('.', '/')
-                            + '/' + pom.artifactId
-                            + '/' + pom.version)
-                    delete fileTree(dir: artifactDir, include: 'maven-metadata.xml*')
+    repositories {
+        mavenDeployer {
+            uniqueVersion = false // publish non unique snapshots to local repository
+            repository(url: "file://${sharedDir}")
+
+            beforeDeployment { 
+                MavenDeployment deployment -> signing.signPom(deployment) 
+            }
+
+            pom.project {
+                name 'Exactpro MVEL'
+                packaging 'jar'
+                // optionally artifactId can be defined here 
+                description 'MVEL is one of such libraries we depend on and which was modified by Exactpro.'
+                url 'https://github.com/Exactpro/mvel'
+
+                scm {
+                    connection 'scm:git:https://github.com/Exactpro/mvel'
+                    developerConnection 'scm:git:https://github.com/Exactpro/mvel'
+                    url 'https://github.com/Exactpro/mvel'
+                }
+
+                licenses {
+                    license {
+                        name 'The Apache License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id 'Nikita-Smirnov-Exactpro'
+                        name 'Nikita Smirnov'
+                        email 'nikita.smirnov@exactprosystems.com'
+                    }
+                }
+            }
+
+            doLast {
+            // Remove any invalid maven-metadata.xml files that may have been created
+            // for SNAPSHOT versions that are *not* uniquely versioned.
+                pom*.each { pom ->
+                    if (pom.version.endsWith('-SNAPSHOT')) {
+                        final File artifactDir = new File(rootProject.ext.sharedDir,
+                                pom.groupId.replace('.', '/')
+                                + '/' + pom.artifactId
+                                + '/' + pom.version)
+                        delete fileTree(dir: artifactDir, include: 'maven-metadata.xml*')
+                    }
                 }
             }
         }
@@ -78,14 +119,17 @@ task sourcesJar(type: Jar, dependsOn: classes) {
     from sourceSets.main.allSource
 }
 
-task testsJar(type: Jar, dependsOn: classes) {
-    classifier = 'tests'
-    from sourceSets.test.output
+task javadocJar(type: Jar, dependsOn: classes) {
+    classifier = 'javadoc'
+    from javadoc
 }
 
 artifacts {
-    archives testsJar
-    archives sourcesJar
+    archives sourcesJar, javadocJar
+}
+
+signing {
+    sign configurations.archives
 }
 
 artifactory {
@@ -100,5 +144,5 @@ artifactory {
 }
 
 artifactoryPublish {
-    dependsOn testsJar, sourcesJar
+    dependsOn sourcesJar, javadocJar
 }
