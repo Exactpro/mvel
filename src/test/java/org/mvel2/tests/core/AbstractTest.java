@@ -472,33 +472,27 @@ public abstract class AbstractTest extends TestCase {
   }
 
   protected static Serializable serializationTest(Serializable s) throws Exception {
-    File file = new File("./mvel_ser_test" + currentTimeMillis() + Math.round(Math.random() * 1000) + ".tmp");
-    InputStream inputStream = null;
-    ObjectInputStream objectIn = null;
+    File file = File.createTempFile("mvel_ser_test", null, new File("."));
     try {
-      file.createNewFile();
-      file.deleteOnExit();
+      ObjectOutputStream objectOut = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(file)));
 
-      FileOutputStream fileStream = new FileOutputStream(file);
-      ObjectOutputStream objectOut = new ObjectOutputStream(new BufferedOutputStream(fileStream));
-      objectOut.writeObject(s);
+      try {
+        objectOut.writeObject(s);
+        objectOut.flush();
+      } finally {
+        objectOut.close();
+      }
 
-      objectOut.flush();
-      fileStream.flush();
-      fileStream.close();
-
-      inputStream = new BufferedInputStream(new FileInputStream(file));
-
-      objectIn = new ObjectInputStream(inputStream);
-
-      return (Serializable) objectIn.readObject();
+      ObjectInputStream objectIn = new ObjectInputStream(new BufferedInputStream(new FileInputStream(file)));
+      try {
+        return (Serializable) objectIn.readObject();
+      } finally {
+        objectIn.close();
+      }
     }
     finally {
-      if (inputStream != null) inputStream.close();
-      if (objectIn != null) objectIn.close();
-      // file.delete();
+      file.delete();
     }
-
   }
 
 

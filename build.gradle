@@ -1,7 +1,7 @@
 ext {
     sharedDir           = file('shared')
     originVersion       = '2.3.2.Final'
-    exactproVersion     = '1'
+    exactproVersion     = '2'
     publishVersion      = "${originVersion}.${exactproVersion}"
 
     sonatype_publish    = project.hasProperty('sonatypePublish') ? true : false

@@ -93,7 +93,7 @@ public strictfp class MathProcessor {
             return doBigDecimalArithmetic((BigDecimal) val1, operation, (BigDecimal) val2, false, -1);
           default:
             if (type2 > 99) {
-              return doBigDecimalArithmetic((BigDecimal) val1, operation, getInternalNumberFromType(val2, type2), false, -1);
+              return doBigDecimalArithmetic((BigDecimal) val1, operation, getInternalNumberFromType(val2), false, -1);
             }
             else {
               return _doOperations(type1, val1, operation, type2, val2);
@@ -154,12 +154,17 @@ public strictfp class MathProcessor {
       case DataTypes.SHORT:
         return val.shortValue();
       case DataTypes.BIG_DECIMAL:
-        return new BigDecimal(val.doubleValue());
-      case DataTypes.BIG_INTEGER:
-        return BigInteger.valueOf(val.longValue());
-
       case DataTypes.STRING:
-        return val.doubleValue();
+        return new BigDecimal(val.toString()).stripTrailingZeros();
+      case DataTypes.BIG_INTEGER: {
+        if (BigDecimal.class == val.getClass()) {
+          return ((BigDecimal)val).toBigInteger();
+        } else if (BigInteger.class == val.getClass()) {
+          return val;
+        } else {
+          return BigInteger.valueOf(val.longValue());
+        }
+      }
     }
     throw new RuntimeException("internal error: " + returnType);
   }
@@ -168,14 +173,14 @@ public strictfp class MathProcessor {
     switch (operation) {
       case ADD:
         if (iNumber) {
-          return narrowType(val1.add(val2, MATH_CONTEXT), returnTarget);
+          return toType(val1.add(val2, MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.add(val2, MATH_CONTEXT);
         }
       case DIV:
         if (iNumber) {
-          return narrowType(val1.divide(val2, MATH_CONTEXT), returnTarget);
+          return toType(val1.divide(val2, MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.divide(val2, MATH_CONTEXT);
@@ -183,14 +188,14 @@ public strictfp class MathProcessor {
 
       case SUB:
         if (iNumber) {
-          return narrowType(val1.subtract(val2, MATH_CONTEXT), returnTarget);
+          return toType(val1.subtract(val2, MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.subtract(val2, MATH_CONTEXT);
         }
       case MULT:
         if (iNumber) {
-          return narrowType(val1.multiply(val2, MATH_CONTEXT), returnTarget);
+          return toType(val1.multiply(val2, MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.multiply(val2, MATH_CONTEXT);
@@ -198,7 +203,7 @@ public strictfp class MathProcessor {
 
       case POWER:
         if (iNumber) {
-          return narrowType(val1.pow(val2.intValue(), MATH_CONTEXT), returnTarget);
+          return toType(val1.pow(val2.intValue(), MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.pow(val2.intValue(), MATH_CONTEXT);
@@ -206,7 +211,7 @@ public strictfp class MathProcessor {
 
       case MOD:
         if (iNumber) {
-          return narrowType(val1.remainder(val2, MATH_CONTEXT), returnTarget);
+          return toType(val1.remainder(val2, MATH_CONTEXT), returnTarget);
         }
         else {
           return val1.remainder(val2, MATH_CONTEXT);
@@ -278,14 +283,14 @@ public strictfp class MathProcessor {
       }
       else if (isNumericOperation(type1, val1, operation, type2, val2)) {
         int returnTarget = box(type2) > box(type1) ? box(type2) : box(type1);
-        if (type1 == DataTypes.BIG_DECIMAL || type2 == DataTypes.BIG_DECIMAL) {
-          return doBigDecimalArithmetic(getInternalNumberFromType(val1, type1),
-              operation,
-              getInternalNumberFromType(val2, type2), false, returnTarget);
-        } else {
+        if (returnTarget == DataTypes.DOUBLE || returnTarget == DataTypes.W_DOUBLE || returnTarget == DataTypes.FLOAT || returnTarget == DataTypes.W_FLOAT) {
           return doPrimWrapperArithmetic(getNumber(val1, type1),
-              operation,
-              getNumber(val2, type2), true, returnTarget);
+                  operation,
+                  getNumber(val2, type2), true, returnTarget);
+        } else {
+            return doBigDecimalArithmetic(getInternalNumberFromType(val1),
+                    operation,
+                    getInternalNumberFromType(val2), returnTarget != BIG_DECIMAL, returnTarget);
         }
       }
       else if (operation != ADD &&
@@ -778,46 +783,36 @@ public strictfp class MathProcessor {
   }
 
 
-  private static BigDecimal getInternalNumberFromType(Object in, int type) {
+  private static BigDecimal getInternalNumberFromType(Object in) {
     if (in == null || in == BlankLiteral.INSTANCE)
       return new BigDecimal(0, MATH_CONTEXT);
-    switch (type) {
-      case BIG_DECIMAL:
-        return (BigDecimal) in;
-      case DataTypes.BIG_INTEGER:
-        return new BigDecimal((BigInteger) in, MathContext.DECIMAL128);
-      case DataTypes.INTEGER:
-      case DataTypes.W_INTEGER:
-        return new BigDecimal((Integer) in, MathContext.DECIMAL32);
-      case DataTypes.LONG:
-      case DataTypes.W_LONG:
-        return new BigDecimal((Long) in, MathContext.DECIMAL64);
-      case DataTypes.STRING:
-        return new BigDecimal((String) in, MathContext.DECIMAL64);
-      case DataTypes.FLOAT:
-      case DataTypes.W_FLOAT:
-        return new BigDecimal((Float) in, MathContext.DECIMAL64);
-      case DataTypes.DOUBLE:
-      case DataTypes.W_DOUBLE:
-        return new BigDecimal((Double) in, MathContext.DECIMAL64);
-      case DataTypes.SHORT:
-      case DataTypes.W_SHORT:
-        return new BigDecimal((Short) in, MathContext.DECIMAL32);
-      case DataTypes.CHAR:
-      case DataTypes.W_CHAR:
-        return new BigDecimal((Character) in, MathContext.DECIMAL32);
-      case DataTypes.BOOLEAN:
-      case DataTypes.W_BOOLEAN:
-        return new BigDecimal(((Boolean) in) ? 1 : 0);
-      case DataTypes.UNIT:
-        return new BigDecimal(((Unit) in).getValue(), MathContext.DECIMAL64);
-      case DataTypes.W_BYTE:
-      case DataTypes.BYTE:
-        return new BigDecimal(((Byte) in).intValue());
-
-
+    Class<?> inClass = in.getClass();
+    if (BigDecimal.class == inClass) {
+      return (BigDecimal) in;
+    } else if (BigInteger.class == inClass) {
+      return new BigDecimal((BigInteger) in, MathContext.DECIMAL128);
+    } else if (Integer.class == inClass) {
+      return new BigDecimal((Integer) in, MathContext.DECIMAL64);
+    } else if (Long.class == inClass) {
+      return new BigDecimal((Long) in, MathContext.DECIMAL128);
+    } else if (String.class == inClass) {
+      return new BigDecimal((String) in, MathContext.DECIMAL128);
+    } else if (Float.class == inClass) {
+      return new BigDecimal((Float) in, MathContext.DECIMAL128);
+    } else if (Double.class == inClass) {
+      return new BigDecimal((Double) in, MathContext.DECIMAL128);
+    } else if (Short.class == inClass) {
+      return new BigDecimal((Short) in, MathContext.DECIMAL32);
+    } else if (Character.class == inClass) {
+      return new BigDecimal((Character) in, MathContext.DECIMAL32);
+    } else if (Boolean.class == inClass) {
+      return new BigDecimal(((Boolean) in) ? 1 : 0);
+    } else if (Unit.class == inClass) {
+      return new BigDecimal(((Unit) in).getValue(), MathContext.DECIMAL64);
+    } else if (Byte.class == inClass) {
+      return new BigDecimal(((Byte) in).intValue());
     }
 
-    throw new RuntimeException("cannot convert <" + in + "> to a numeric type: " + in.getClass() + " [" + type + "]");
+    throw new RuntimeException("cannot convert <" + in + "> to a numeric type: " + in.getClass());
   }
 }

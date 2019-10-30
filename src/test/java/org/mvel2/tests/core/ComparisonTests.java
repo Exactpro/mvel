@@ -308,6 +308,22 @@ public class ComparisonTests extends AbstractTest {
     assertEquals(false, test("new java.math.BigDecimal('201708100000000076') == '201708100000000074'"));
   }
   
+  public void testLongStringNotEquals() {
+    assertEquals(false, test("java.lang.Long.MAX_VALUE == java.lang.Long.toString(java.lang.Long.MAX_VALUE - 1)"));
+  }
+
+  public void testLongStringEquals() {
+    assertEquals(true, test("java.lang.Long.MAX_VALUE == java.lang.Long.toString(java.lang.Long.MAX_VALUE)"));
+  }
+
+  public void testIntegerStringNotEquals() {
+    assertEquals(false, test("java.lang.Integer.MAX_VALUE == java.lang.Integer.toString(java.lang.Integer.MAX_VALUE - 1)"));
+  }
+
+  public void testIntegerStringEquals() {
+    assertEquals(true, test("java.lang.Integer.MAX_VALUE == java.lang.Integer.toString(java.lang.Integer.MAX_VALUE)"));
+  }
+
   public void testStringCoercionForComparison() {
     assertEquals(false, MVEL.eval("36 > 242"));
     assertEquals(false, MVEL.eval("\"36\" > 242"));

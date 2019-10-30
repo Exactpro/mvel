@@ -286,7 +286,7 @@ public class TemplateTests extends TestCase {
     }
 
     public void testMath() {
-        assertEquals(188.4, test("@{pi * hour}"));
+        assertEquals(0, new BigDecimal("188.4").compareTo((BigDecimal) test("@{pi * hour}")));
     }
 
     public void testTemplating() {
