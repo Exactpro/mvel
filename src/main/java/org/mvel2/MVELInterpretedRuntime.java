@@ -27,6 +27,8 @@ import org.mvel2.integration.impl.ImmutableDefaultFactory;
 import org.mvel2.integration.impl.MapVariableResolverFactory;
 import org.mvel2.util.ErrorUtil;
 import org.mvel2.util.ExecutionStack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -38,6 +40,8 @@ import static org.mvel2.Operator.*;
  */
 @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
 public class MVELInterpretedRuntime extends AbstractParser {
+  private static final Logger LOGGER = LoggerFactory.getLogger(MVELInterpretedRuntime.class);
+
   public Object parse() {
     try {
       stk = new ExecutionStack();
@@ -79,6 +83,7 @@ public class MVELInterpretedRuntime extends AbstractParser {
 
     try {
       while ((tk = nextToken()) != null) {
+        LOGGER.debug("Next token [{}]", tk);
         holdOverRegister = null;
 
         if (lastWasIdentifier && lastNode.isDiscard()) {

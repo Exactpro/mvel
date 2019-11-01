@@ -81,4 +81,18 @@ public class SimpleSTValueResolver implements VariableResolver {
     return value;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder('[');
+
+    if (value != null) {
+      builder.append(" value: ").append(value);
+    }
+    if (type != null) {
+      builder.append(" type: ").append(type.getSimpleName());
+    }
+    builder.append(" updated: ").append(updated).append(']');
+
+    return builder.toString();
+  }
 }

@@ -2,6 +2,8 @@ package org.mvel2.tests.core;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.TestCase;
+import org.junit.After;
+import org.junit.Before;
 import org.mvel2.DataConversion;
 import org.mvel2.MVEL;
 import org.mvel2.ParserContext;
@@ -9,6 +11,7 @@ import org.mvel2.compiler.CompiledExpression;
 import org.mvel2.compiler.ExpressionCompiler;
 import org.mvel2.debug.DebugTools;
 import org.mvel2.integration.impl.MapVariableResolverFactory;
+import org.mvel2.optimizers.OptimizerFactory;
 import org.mvel2.optimizers.dynamic.DynamicOptimizer;
 import org.mvel2.tests.core.res.Base;
 import org.mvel2.tests.core.res.DerivedClass;
@@ -56,6 +59,11 @@ public abstract class AbstractTest extends TestCase {
     DynamicOptimizer.tenuringThreshold = 1;
   }
 
+  @After
+  public void after() {
+    MVEL.reset();
+    OptimizerFactory.resetDefaultOptimizer();
+  }
 
   private boolean silentTests = Boolean.getBoolean("mvel.tests.silent");
 

@@ -47,24 +47,22 @@ public class MVEL {
   public static final String VERSION = "2.3";
   public static final String VERSION_SUB = "0";
   public static final String CODENAME = "liberty";
-  static boolean DEBUG_FILE = getBoolean("mvel2.debug.fileoutput");
-  static String ADVANCED_DEBUGGING_FILE = System.getProperty("mvel2.debugging.file") == null ? "mvel_debug.txt" : System.getProperty("mvel2.debugging.file");
-  static boolean ADVANCED_DEBUG = getBoolean("mvel2.advanced_debugging");
-  static boolean WEAK_CACHE = getBoolean("mvel2.weak_caching");
-  static boolean NO_JIT = getBoolean("mvel2.disable.jit");
-  public static boolean INVOKED_METHOD_EXCEPTIONS_BUBBLE = getBoolean("mvel2.invoked_meth_exceptions_bubble");
-  public static boolean COMPILER_OPT_ALLOW_NAKED_METH_CALL = getBoolean("mvel2.compiler.allow_naked_meth_calls");
-  public static boolean COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING = getBoolean("mvel2.compiler.allow_override_all_prophandling");
-  public static boolean COMPILER_OPT_ALLOW_RESOLVE_INNERCLASSES_WITH_DOTNOTATION = getBoolean("mvel2.compiler.allow_resolve_inner_classes_with_dotnotation");
-  public static boolean COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS = getBoolean("mvel2.compiler.support_java_style_class_literals");
-  public static boolean COMPILER_OPT_ALLOCATE_TYPE_LITERALS_TO_SHARED_SYMBOL_TABLE = getBoolean("mvel2.compiler.allocate_type_literals_to_shared_symbol_table");
+  static final boolean DEBUG_FILE = getBoolean("mvel2.debug.fileoutput");
+  static final String ADVANCED_DEBUGGING_FILE = System.getProperty("mvel2.debugging.file") == null ? "mvel_debug.txt" : System.getProperty("mvel2.debugging.file");
+  static final boolean ADVANCED_DEBUG = getBoolean("mvel2.advanced_debugging");
+  static final boolean WEAK_CACHE = getBoolean("mvel2.weak_caching");
+  static final boolean NO_JIT = getBoolean("mvel2.disable.jit");
+  public static boolean INVOKED_METHOD_EXCEPTIONS_BUBBLE;
+  public static boolean COMPILER_OPT_ALLOW_NAKED_METH_CALL;
+  public static boolean COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING;
+  public static boolean COMPILER_OPT_ALLOW_RESOLVE_INNERCLASSES_WITH_DOTNOTATION;
+  public static boolean COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS;
+  public static boolean COMPILER_OPT_ALLOCATE_TYPE_LITERALS_TO_SHARED_SYMBOL_TABLE;
 
-  static boolean OPTIMIZER = true;
+  static boolean OPTIMIZER;
 
   static {
-    if (System.getProperty("mvel2.optimizer") != null) {
-      OPTIMIZER = getBoolean("mvel2.optimizer");
-    }
+    reset();
   }
 
   private MVEL() {
@@ -1106,5 +1104,21 @@ public class MVEL {
     catch (NoSuchMethodException e) {
       throw new RuntimeException("no such method: " + methodName);
     }
+  }
+
+  /**
+   * Resets value of public variables.
+   */
+  public static void reset() {
+    INVOKED_METHOD_EXCEPTIONS_BUBBLE = getBoolean("mvel2.invoked_meth_exceptions_bubble");
+    COMPILER_OPT_ALLOW_NAKED_METH_CALL = getBoolean("mvel2.compiler.allow_naked_meth_calls");
+    COMPILER_OPT_ALLOW_OVERRIDE_ALL_PROPHANDLING = getBoolean("mvel2.compiler.allow_override_all_prophandling");
+    COMPILER_OPT_ALLOW_RESOLVE_INNERCLASSES_WITH_DOTNOTATION = getBoolean("mvel2.compiler.allow_resolve_inner_classes_with_dotnotation");
+    COMPILER_OPT_SUPPORT_JAVA_STYLE_CLASS_LITERALS = getBoolean("mvel2.compiler.support_java_style_class_literals");
+    COMPILER_OPT_ALLOCATE_TYPE_LITERALS_TO_SHARED_SYMBOL_TABLE = getBoolean("mvel2.compiler.allocate_type_literals_to_shared_symbol_table");
+
+    OPTIMIZER = System.getProperty("mvel2.optimizer") != null
+        ? OPTIMIZER = getBoolean("mvel2.optimizer")
+        : true;
   }
 }

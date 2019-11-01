@@ -21,23 +21,28 @@ package org.mvel2.optimizers;
 import org.mvel2.optimizers.dynamic.DynamicOptimizer;
 import org.mvel2.optimizers.impl.asm.ASMAccessorOptimizer;
 import org.mvel2.optimizers.impl.refl.ReflectiveAccessorOptimizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class OptimizerFactory {
-  public static String DYNAMIC = "dynamic";
-  public static String SAFE_REFLECTIVE = "reflective";
+  private static final Logger LOGGER = LoggerFactory.getLogger(OptimizerFactory.class);
+  public static final String DYNAMIC = "dynamic";
+  public static final String SAFE_REFLECTIVE = "reflective";
 
-  private static String defaultOptimizer;
+  private static volatile String defaultOptimizer;
   private static final Map<String, AccessorOptimizer> accessorCompilers = new HashMap<String, AccessorOptimizer>();
 
   private static ThreadLocal<Class<? extends AccessorOptimizer>> threadOptimizer
       = new ThreadLocal<Class<? extends AccessorOptimizer>>();
 
   static {
-    accessorCompilers.put(SAFE_REFLECTIVE, new ReflectiveAccessorOptimizer());
-    accessorCompilers.put(DYNAMIC, new DynamicOptimizer());
+    AccessorOptimizer ao = new ReflectiveAccessorOptimizer(); ao.init();
+    accessorCompilers.put(SAFE_REFLECTIVE, ao);
+    ao = new DynamicOptimizer(); ao.init();
+    accessorCompilers.put(DYNAMIC, ao);
     /**
      * By default, activate the JIT if ASM is present in the classpath
      */
@@ -47,7 +52,8 @@ public class OptimizerFactory {
       } else {
           ClassLoader.getSystemClassLoader().loadClass("org.mvel2.asm.ClassWriter");
       }
-      accessorCompilers.put("ASM", new ASMAccessorOptimizer());
+      ao = new ASMAccessorOptimizer(); ao.init();
+      accessorCompilers.put("ASM", ao);
     }
     catch (ClassNotFoundException e) {
       defaultOptimizer = SAFE_REFLECTIVE;
@@ -59,10 +65,7 @@ public class OptimizerFactory {
       defaultOptimizer = SAFE_REFLECTIVE;
     }
 
-    if (Boolean.getBoolean("mvel2.disable.jit"))
-      setDefaultOptimizer(SAFE_REFLECTIVE);
-    else
-      setDefaultOptimizer(DYNAMIC);
+    resetDefaultOptimizer();
   }
 
   public static AccessorOptimizer getDefaultAccessorCompiler() {
@@ -100,11 +103,18 @@ public class OptimizerFactory {
     threadOptimizer.set(optimizer);
   }
 
+  public static void resetDefaultOptimizer() {
+    if (Boolean.getBoolean("mvel2.disable.jit")) {
+      setDefaultOptimizer(SAFE_REFLECTIVE);
+    } else {
+      setDefaultOptimizer(DYNAMIC);
+    }
+  }
+
   public static void setDefaultOptimizer(String name) {
     try {
-      //noinspection unchecked
-      AccessorOptimizer ao = accessorCompilers.get(defaultOptimizer = name);
-      ao.init();
+      LOGGER.info("Set default optimizer [{}]", name);
+      defaultOptimizer = name;
       //clear optimizer so next call to getThreadAccessorOptimizer uses the default again, don't set thread optimizer
       //or else static initializers setting the default will unintentionally set up ThreadLocals
       threadOptimizer.set(null);

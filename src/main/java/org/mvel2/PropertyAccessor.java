@@ -25,6 +25,8 @@ import org.mvel2.util.ErrorUtil;
 import org.mvel2.util.MethodStub;
 import org.mvel2.util.ParseTools;
 import org.mvel2.util.StringAppender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.*;
@@ -53,6 +55,7 @@ import static org.mvel2.util.Varargs.paramTypeVarArgsSafe;
  * The property accessor class is used for extracting properties from objects instances.
  */
 public class PropertyAccessor {
+  private static final Logger LOGGER = LoggerFactory.getLogger(PropertyAccessor.class);
   private int start = 0;
   private int cursor = 0;
   private int st;
@@ -176,15 +179,19 @@ public class PropertyAccessor {
       switch (nextToken()) {
         case NORM:
           curr = getBeanProperty(curr, capture());
+          LOGGER.trace("Parse token [{}] current [{}]", NORM, curr);
           break;
         case METH:
           curr = getMethod(curr, capture());
+          LOGGER.trace("Parse token [{}] current [{}]", METH, curr);
           break;
         case COL:
           curr = getCollectionProperty(curr, capture());
+          LOGGER.trace("Parse token [{}] current [{}]", COL, curr);
           break;
         case WITH:
           curr = getWithProperty(curr);
+          LOGGER.trace("Parse token [{}] current [{}]", WITH, curr);
           break;
       }
 

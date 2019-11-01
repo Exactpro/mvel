@@ -18,9 +18,12 @@
 
 package org.mvel2.integration.impl;
 
+import com.sun.org.apache.bcel.internal.generic.LLOAD;
 import org.mvel2.UnresolveablePropertyException;
 import org.mvel2.integration.VariableResolver;
 import org.mvel2.integration.VariableResolverFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -28,6 +31,8 @@ import java.util.Set;
 
 @SuppressWarnings({"unchecked"})
 public class CachingMapVariableResolverFactory extends BaseVariableResolverFactory {
+  private static final Logger LOGGER = LoggerFactory.getLogger(CachingMapVariableResolverFactory.class);
+
   /**
    * Holds the instance of the variables.
    */
@@ -69,6 +74,7 @@ public class CachingMapVariableResolverFactory extends BaseVariableResolverFacto
   }
 
   public VariableResolver getVariableResolver(String name) {
+    LOGGER.debug("getVariableResolver name [{}] resolvers [{}]", name, variableResolvers);
     VariableResolver vr = variableResolvers.get(name);
     if (vr != null) {
       return vr;
@@ -93,6 +99,7 @@ public class CachingMapVariableResolverFactory extends BaseVariableResolverFacto
 
   protected VariableResolver addResolver(String name, VariableResolver vr) {
     variableResolvers.put(name, vr);
+    LOGGER.debug("addResolver name [{}] resolver [{}]", name, vr);
     return vr;
   }
 
