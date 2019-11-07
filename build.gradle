@@ -1,14 +1,18 @@
+ext {
+    sharedDir           = file('shared')
+    originVersion       = '2.3.2.Final'
+    exactproVersion     = '1'
+    publishVersion      = "${originVersion}.${exactproVersion}"
+
+    sonatype_publish    = project.hasProperty('sonatypePublish') ? true : false
+}
+
 apply plugin: 'com.jfrog.artifactory'
 apply plugin: 'jacoco'
 apply plugin: 'java'
 apply plugin: 'maven'
-apply plugin: 'signing'
-
-ext {
-    sharedDir       = file('shared')
-    originVersion   = '2.3.2.Final'
-    exactproVersion = '1'
-    publishVersion  = "${originVersion}.${exactproVersion}"
+if (sonatype_publish) {
+    apply plugin: 'signing'
 }
 
 group = 'com.exactpro.mvel'
@@ -60,40 +64,56 @@ javadoc {
 uploadArchives {
     repositories {
         mavenDeployer {
-            uniqueVersion = false // publish non unique snapshots to local repository
-            repository(url: "file://${sharedDir}")
+            if (sonatype_publish) {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
 
-            beforeDeployment { 
-                MavenDeployment deployment -> signing.signPom(deployment) 
-            }
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
 
-            pom.project {
-                name 'Exactpro MVEL'
-                packaging 'jar'
-                // optionally artifactId can be defined here 
-                description 'MVEL is one of such libraries we depend on and which was modified by Exactpro.'
-                url 'https://github.com/Exactpro/mvel'
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
 
-                scm {
-                    connection 'scm:git:https://github.com/Exactpro/mvel'
-                    developerConnection 'scm:git:https://github.com/Exactpro/mvel'
+                pom.project {
+                    name 'Exactpro MVEL'
+                    packaging 'jar'
+                    // optionally artifactId can be defined here
+                    description 'MVEL is one of such libraries we depend on and which was modified by Exactpro.'
                     url 'https://github.com/Exactpro/mvel'
-                }
 
-                licenses {
-                    license {
-                        name 'The Apache License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    scm {
+                        connection 'scm:git:https://github.com/Exactpro/mvel'
+                        developerConnection 'scm:git:https://github.com/Exactpro/mvel'
+                        url 'https://github.com/Exactpro/mvel'
+                    }
+
+                    licenses {
+                        license {
+                            name 'The Apache License, Version 2.0'
+                            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        }
+                    }
+
+                    developers {
+                        developer {
+                            id 'Nikita-Smirnov-Exactpro'
+                            name 'Nikita Smirnov'
+                            email 'nikita.smirnov@exactprosystems.com'
+                        }
+
+                        developer {
+                            id 'ivandruzhinin'
+                            name 'Ivan Druzhinin'
+                            email 'ivan.druzhinin@exactprosystems.com'
+                        }
                     }
                 }
-
-                developers {
-                    developer {
-                        id 'Nikita-Smirnov-Exactpro'
-                        name 'Nikita Smirnov'
-                        email 'nikita.smirnov@exactprosystems.com'
-                    }
-                }
+            } else {
+                uniqueVersion = false // publish non unique snapshots to local repository
+                repository(url: "file://${sharedDir}")
             }
 
             doLast {
@@ -128,8 +148,10 @@ artifacts {
     archives sourcesJar, javadocJar
 }
 
-signing {
-    sign configurations.archives
+if (sonatype_publish) {
+    signing {
+        sign configurations.archives
+    }
 }
 
 artifactory {
