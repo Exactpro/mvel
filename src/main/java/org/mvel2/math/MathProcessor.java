@@ -162,7 +162,7 @@ public strictfp class MathProcessor {
         } else if (BigInteger.class == val.getClass()) {
           return val;
         } else {
-          return BigInteger.valueOf(val.longValue());
+        return BigInteger.valueOf(val.longValue());
         }
       }
     }
@@ -285,11 +285,11 @@ public strictfp class MathProcessor {
         int returnTarget = box(type2) > box(type1) ? box(type2) : box(type1);
         if (returnTarget == DataTypes.DOUBLE || returnTarget == DataTypes.W_DOUBLE || returnTarget == DataTypes.FLOAT || returnTarget == DataTypes.W_FLOAT) {
           return doPrimWrapperArithmetic(getNumber(val1, type1),
-                  operation,
+              operation,
                   getNumber(val2, type2), true, returnTarget);
         } else {
             return doBigDecimalArithmetic(getInternalNumberFromType(val1),
-                    operation,
+              operation,
                     getInternalNumberFromType(val2), returnTarget != BIG_DECIMAL, returnTarget);
         }
       }
@@ -788,9 +788,9 @@ public strictfp class MathProcessor {
       return new BigDecimal(0, MATH_CONTEXT);
     Class<?> inClass = in.getClass();
     if (BigDecimal.class == inClass) {
-      return (BigDecimal) in;
+        return (BigDecimal) in;
     } else if (BigInteger.class == inClass) {
-      return new BigDecimal((BigInteger) in, MathContext.DECIMAL128);
+        return new BigDecimal((BigInteger) in, MathContext.DECIMAL128);
     } else if (Integer.class == inClass) {
       return new BigDecimal((Integer) in, MathContext.DECIMAL64);
     } else if (Long.class == inClass) {
@@ -802,15 +802,15 @@ public strictfp class MathProcessor {
     } else if (Double.class == inClass) {
       return new BigDecimal((Double) in, MathContext.DECIMAL128);
     } else if (Short.class == inClass) {
-      return new BigDecimal((Short) in, MathContext.DECIMAL32);
+        return new BigDecimal((Short) in, MathContext.DECIMAL32);
     } else if (Character.class == inClass) {
-      return new BigDecimal((Character) in, MathContext.DECIMAL32);
+        return new BigDecimal(String.valueOf((Character) in), MathContext.DECIMAL32);
     } else if (Boolean.class == inClass) {
-      return new BigDecimal(((Boolean) in) ? 1 : 0);
+        return new BigDecimal(((Boolean) in) ? 1 : 0);
     } else if (Unit.class == inClass) {
-      return new BigDecimal(((Unit) in).getValue(), MathContext.DECIMAL64);
+        return new BigDecimal(((Unit) in).getValue(), MathContext.DECIMAL64);
     } else if (Byte.class == inClass) {
-      return new BigDecimal(((Byte) in).intValue());
+        return new BigDecimal(((Byte) in).intValue());
     }
 
     throw new RuntimeException("cannot convert <" + in + "> to a numeric type: " + in.getClass());

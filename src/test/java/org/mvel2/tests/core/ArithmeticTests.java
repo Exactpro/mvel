@@ -5,6 +5,7 @@ import static org.mvel2.MVEL.executeExpression;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -1101,4 +1102,36 @@ public class ArithmeticTests extends AbstractTest {
         expression = MVEL.compileExpression("50.00001f == 50f");
         assertFalse((Boolean)MVEL.executeExpression(expression));
     }
+
+  public void testCharacterComparison() {
+    Map<String, Object> map = new HashMap<String, Object>();
+    map.put("vChar", '1');
+    map.put("vString", "1");
+    map.put("vInteger", 1);
+    map.put("vFloat", 1.0d);
+    map.put("vBigInteger", new BigInteger("1"));
+    map.put("vBigFloat", new BigDecimal("1"));
+
+    assertEquals("Character vs String", true, testCompiledSimple("vChar == vString", map));
+    assertEquals("Character vs Integer", true, testCompiledSimple("vChar == vInteger", map));
+    assertEquals("Character vs Double", true, testCompiledSimple("vChar == vFloat", map));
+    assertEquals("Character vs BigInteger", true, testCompiledSimple("vChar == vBigInteger", map));
+    assertEquals("Character vs BigDecimal", true, testCompiledSimple("vChar == vBigFloat", map));
+  }
+
+  public void testStringComparison() {
+    Map<String, Object> map = new HashMap<String, Object>();
+    map.put("vString", "1");
+    map.put("vChar", '1');
+    map.put("vInteger", 1);
+    map.put("vFloat", 1.0d);
+    map.put("vBigInteger", new BigInteger("1"));
+    map.put("vBigFloat", new BigDecimal("1"));
+
+    assertEquals("String vs Character", true, testCompiledSimple("vString == vChar", map));
+    assertEquals("String vs Integer", true, testCompiledSimple("vString == vInteger", map));
+    assertEquals("String vs Double", true, testCompiledSimple("vString == vFloat", map));
+    assertEquals("String vs BigInteger", true, testCompiledSimple("vString == vBigInteger", map));
+    assertEquals("String vs BigDecimal", true, testCompiledSimple("vString == vBigFloat", map));
+  }
 }
